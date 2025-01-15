@@ -1,0 +1,88 @@
+from pprint import pprint
+import random
+import math
+
+TIMESTAMPS_COUNT = 50000
+
+PROBABILITY_SCORE_CHANGED = 0.0001
+
+PROBABILITY_HOME_SCORE = 0.45
+
+OFFSET_MAX_STEP = 3
+
+INITIAL_STAMP = {
+    "offset": 0,
+    "score": {
+        "home": 0,
+        "away": 0
+    }
+}
+
+
+def generate_stamp(previous_value):
+    score_changed = random.random() > 1 - PROBABILITY_SCORE_CHANGED
+    home_score_change = 1 if score_changed and random.random() > 1 - \
+                             PROBABILITY_HOME_SCORE else 0
+    away_score_change = 1 if score_changed and not home_score_change else 0
+    offset_change = math.floor(random.random() * OFFSET_MAX_STEP) + 1
+
+    return {
+        "offset": previous_value["offset"] + offset_change,
+        "score": {
+            "home": previous_value["score"]["home"] + home_score_change,
+            "away": previous_value["score"]["away"] + away_score_change
+        }
+    }
+
+
+def generate_game():
+    stamps = [INITIAL_STAMP, ]
+    current_stamp = INITIAL_STAMP
+    for _ in range(TIMESTAMPS_COUNT):
+        current_stamp = generate_stamp(current_stamp)
+        stamps.append(current_stamp)
+
+    return stamps
+
+
+game_stamps = generate_game()
+
+pprint(game_stamps)
+
+
+def get_score(game_stamps, offset):
+    """ Function takes list of game's stamps and time offset for which returns the scores for the home and away teams.
+    Input format: enter the offset value in the input string.
+    Output format: "The score for home and away teams: (home, away)". For example: (2, 1).
+    Since there is no complete technical specification, in other cases the function works like this:
+    if the entered offset doesn't contain score function returns the previous existed score,
+    if the entered offset is outside the existing values function returns minimum or maximum value.
+    """
+
+    if type(offset) is not int:
+        raise TypeError('Offset must be integer')
+    if offset < 0:
+        raise ValueError("Offset can't be negative")
+    home = 0
+    away = 0
+    if game_stamps[-1].get('offset') < offset:
+        home = game_stamps[-1].get('score').get('home')
+        away = game_stamps[-1].get('score').get('away')
+    offset_list = [i for i in range(offset - OFFSET_MAX_STEP + 1, offset + 1)]
+    for i_offset in offset_list[::-1]:
+        for game_stamp in game_stamps:
+            if i_offset == game_stamp.get('offset'):
+                home = game_stamp.get('score').get('home')
+                away = game_stamp.get('score').get('away')
+                return home, away
+            else:
+                continue
+
+    return home, away
+
+
+offset_input = int(input("Enter offset: "))
+
+score = get_score(game_stamps, offset_input)
+
+print(f'The score for home and away teams: {score}')
